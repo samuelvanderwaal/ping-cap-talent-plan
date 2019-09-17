@@ -1,0 +1,11 @@
+name: kvs
+version: "0.1.0"
+author: Samuel J Vanderwaal <samuel.vanderwaal@gmail.com>
+about: Creates simple key-value database in memory.
+subcommands:
+    - get:
+        about: Gets a value from a provided key
+        args:
+            -key:
+                value_name: "KEY"
+                takes_value: true
