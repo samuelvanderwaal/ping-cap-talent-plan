@@ -64,7 +64,10 @@ fn main() {
     let a = Move { num_squares: 7, direction: Direction::South};
     let r = to_string(&a).expect("Serialization failed");
     match write_to_file("move.ron", r) {
-        Err(e) => println!("{:?}", e),
+        Err(e) =>  {
+            println!("{} {}", e, e.description());
+            process::exit(1);
+        },
         Ok(_) => ()
     }
 
