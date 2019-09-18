@@ -7,8 +7,8 @@ use std::path::Path;
 use std::process;
 use std::io::{self, Read, Write};
 use std::fs::File;
-use ron::de::from_str;
-use ron::ser::to_string;
+use ron;
+use serde_json;
 
 #[derive(Debug, Deserialize, Serialize)]
 enum Direction {
@@ -24,74 +24,17 @@ struct Move {
     direction: Direction,
 }
 
-#[derive(Debug)]
-enum CustomError {
-    Io(io::Error),
-    RonError(ron::ser::Error),
-}
-
-impl fmt::Display for CustomError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            CustomError::Io(ref err) => err.fmt(f),
-            CustomError::RonError(ref err) => err.fmt(f),
-        }
-    }
-}
-
-impl Error for CustomError {
-    fn description(&self) -> &str {
-        match *self {
-            CustomError::Io(ref err) => err.description(),
-            CustomError::RonError(ref err) => err.description(),
-        }
-    }
-}
-
-impl From<io::Error> for CustomError {
-    fn from(err: io::Error) -> CustomError {
-        CustomError::Io(err)
-    }
-}
-
-impl From<ron::ser::Error> for CustomError {
-    fn from(err: ron::ser::Error) -> CustomError {
-        CustomError::RonError(err)
-    }
-}
-
 fn main() {
     let a = Move { num_squares: 7, direction: Direction::South};
-    let r = to_string(&a).expect("Serialization failed");
-    match write_to_file("move.ron", r) {
-        Err(e) =>  {
-            println!("{} {}", e, e.description());
-            process::exit(1);
-        },
-        Ok(_) => ()
-    }
+    let j = serde_json::to_string(&a).unwrap();
+    let mut buffer1: Vec<u8> = Vec::new();
+    let mut buffer2: Vec<u8> = Vec::new();
+    buffer1.write_all(&j.as_bytes()).unwrap();
+    println!("Json as u8 bytes: {:?}", buffer1);
+    println!("Json as a string: {:?}", std::str::from_utf8(&buffer1).unwrap());
 
-    let contents: String = match read_from_file("move.ron") {
-        Err(e) => {
-            println!("{} {:?}", e, e.description());
-            process::exit(1);
-        },
-        Ok(contents) => contents,
-    };
-    let b: Move = from_str(&contents).unwrap();
-    println!("{:?}", a);
-    println!("{:?}", b);
-}
-
-fn write_to_file<P: AsRef<Path>>(path: P, r: String) -> Result<(), CustomError> {
-    let mut writer = File::create(&path)?;
-    writer.write_all(r.as_bytes())?;
-    Ok(())
-}
-
-fn read_from_file<P: AsRef<Path>>(path: P) -> Result<String, CustomError> {
-    let mut reader = File::open(&path)?;
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    Ok(contents)
+    let r = ron::ser::to_string(&a).unwrap();
+    buffer2.write_all(&r.as_bytes()).unwrap();
+    println!("Ron as u8 bytes: {:?}", buffer2);
+    println!("Ron as a String: {:?}", std::str::from_utf8(&buffer2).unwrap());
 }
