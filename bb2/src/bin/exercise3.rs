@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate serde;
 
-// use std::io::{Read, Write};
+use std::io::{Cursor, Read, Write};
 use std::fs::File;
 use bson::{decode_document, encode_document};
 use rand::{
@@ -35,23 +35,34 @@ struct Move {
 }
 
 fn main() {
-    let mut writer = File::create("move.bson").unwrap();
+    let mut buffer = File::create("move.bson").unwrap();
+    write_moves(&mut buffer);
 
+    let buffer = File::open("move.bson").unwrap();
+    read_moves(buffer);
+
+    let mut buffer: Vec<u8> = Vec::new();
+    write_moves(&mut buffer);
+
+    let mut buffer = Cursor::new(buffer);
+    read_moves(&mut buffer);
+}
+
+fn write_moves<B: Write>(buffer: &mut B) {
     for n in 0..1000 {
         let direction: Direction = rand::random();
         let m = Move { num_squares: n, direction: direction};
         let ser_bson = bson::to_bson(&m).unwrap();
         if let bson::Bson::Document(document) = ser_bson {
-            encode_document(&mut writer, &document).unwrap();
+            encode_document(buffer, &document).unwrap();
         } else {
             println!("Error converting {} document!", n);
         }
     }
+}
 
-    let mut reader = File::open("move.bson").unwrap();
-
-    while let Ok(decoded) = decode_document(&mut reader) {
+fn read_moves<B: Read>(mut buffer: B) {
+    while let Ok(decoded) = decode_document(&mut buffer) {
         println!("{:?}", decoded);
     }
-
 }
